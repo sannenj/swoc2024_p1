@@ -1,4 +1,7 @@
 ﻿using Swoc2024;
+using Swoc2024.Planning;
+using static BasicTester.PlanningHelpers;
+
 
 namespace BasicTester;
 
@@ -15,7 +18,7 @@ public class AStarPlannerTesting
     [Test]
     public void SimpleTwoDimensionTest0_0_to_5_5()
     {
-        IPlanner.PlanResult? result = planner.PlanNextMove([], new Position([0, 0]), new Position([5, 5]));
+        PlanResult? result = planner.PlanNextMove([], new Position([0, 0]), new Position([5, 5]));
         Assert.That(result, Is.Not.Null);
         Assert.Multiple(() =>
         {
@@ -27,7 +30,7 @@ public class AStarPlannerTesting
     [Test]
     public void SimpleTwoDimensionTest5_0_to_5_5()
     {
-        IPlanner.PlanResult? result = planner.PlanNextMove([], new Position([5, 0]), new Position([5, 5]));
+        PlanResult? result = planner.PlanNextMove([], new Position([5, 0]), new Position([5, 5]));
         Assert.That(result, Is.Not.Null);
         Assert.Multiple(() =>
         {
@@ -39,7 +42,7 @@ public class AStarPlannerTesting
     [Test]
     public void SimpleThreeDimensionTest9_4_2_to_10_4_2()
     {
-        IPlanner.PlanResult? result = planner.PlanNextMove([], new Position([9, 4, 2]), new Position([10, 4, 2]));
+        PlanResult? result = planner.PlanNextMove([], new Position([9, 4, 2]), new Position([10, 4, 2]));
         Assert.That(result, Is.Not.Null);
         Assert.Multiple(() =>
         {
@@ -51,7 +54,7 @@ public class AStarPlannerTesting
     [Test]
     public void SimpleThreeDimensionTest9_4_2_to_2_5_80()
     {
-        IPlanner.PlanResult? result = planner.PlanNextMove([], new Position([9, 4, 2]), new Position([2, 5, 80]));
+        PlanResult? result = planner.PlanNextMove([], new Position([9, 4, 2]), new Position([2, 5, 80]));
         Assert.That(result, Is.Not.Null);
         Assert.Multiple(() =>
         {
@@ -63,7 +66,7 @@ public class AStarPlannerTesting
     [Test]
     public void PlanAroundInTwoDimension()
     {
-        IPlanner.PlanResult? result = planner.PlanNextMove([new Position([9, 5])], new Position([9, 4]), new Position([9, 8]));
+        PlanResult? result = planner.PlanNextMove([new Position([9, 5])], new Position([9, 4]), new Position([9, 8]));
         Assert.That(result, Is.Not.Null);
         Assert.Multiple(() =>
         {
@@ -81,12 +84,12 @@ public class AStarPlannerTesting
         Position[] blocked = [
             new([9, 5]),
         ];
-        List<IPlanner.PlanResult> result = PlanResult(blocked, planner, current, target).ToList();
+        List<PlanResult> result = PlanResult(blocked, planner, current, target).ToList();
         Assert.That(result, Has.Count.EqualTo(6));
         Assert.Multiple(() =>
         {
-            AssertMoveCountDown(result, 6);
-            AssertPositions(result, [
+            AssertPlannedMoveCountDown(result, 6);
+            AssertPlannedPositions(result, [
                     new Position([8, 4]),
                     new Position([8, 5]),
                     new Position([8, 6]),
@@ -111,8 +114,8 @@ public class AStarPlannerTesting
         Assert.That(result, Has.Count.EqualTo(8));
         Assert.Multiple(() =>
         {
-            AssertMoveCountDown(result, 8);
-            AssertPositions(result, [
+            AssertPlannedMoveCountDown(result, 8);
+            AssertPlannedPositions(result, [
                 new Position([8, 4]),
                 new Position([7, 4]),
                 new Position([7, 5]),
@@ -142,12 +145,12 @@ public class AStarPlannerTesting
           //new ([target.Positions[0] + 1,  target.Positions[1]]),
         ];
 
-        List<IPlanner.PlanResult> results = PlanResult(blocked, planner, current, target).ToList();
+        List<PlanResult> results = PlanResult(blocked, planner, current, target).ToList();
         Assert.That(results, Has.Count.EqualTo(8));
         Assert.Multiple(() =>
         {
-            AssertMoveCountDown(results, 8);
-            AssertPositions(results, [
+            AssertPlannedMoveCountDown(results, 8);
+            AssertPlannedPositions(results, [
                 new([9,  5]),
                 new([9,  6]),
                 new([10,  6]),
@@ -177,12 +180,12 @@ public class AStarPlannerTesting
           //new ([target.Positions[0] + 1,  target.Positions[1]]),
         ];
 
-        List<IPlanner.PlanResult> results = PlanResult(blocked, planner, current, target).ToList();
+        List<PlanResult> results = PlanResult(blocked, planner, current, target).ToList();
         Assert.That(results, Has.Count.EqualTo(10));
         Assert.Multiple(() =>
         {
-            AssertMoveCountDown(results, 10);
-            AssertPositions(results, [
+            AssertPlannedMoveCountDown(results, 10);
+            AssertPlannedPositions(results, [
                 new([7,  9]),
                 new([7, 10]),
                 new([8, 10]),
@@ -197,45 +200,4 @@ public class AStarPlannerTesting
         });
     }
 
-    private IEnumerable<IPlanner.PlanResult> PlanResult(Position[] blocked, IPlanner planner, Position current, Position target)
-    {
-        const int maxCount = 20;
-        int count = 0;
-        IPlanner.PlanResult? result = planner.PlanNextMove(blocked, current, target);
-        if (result is not null)
-        {
-            while (result is not null && result.NextPosition != target && count < maxCount)
-            {
-                yield return result;
-                result = planner.PlanNextMove(blocked, result.NextPosition, target);
-                count++;
-            }
-            if (result is not null && result.MoveCount != 0)
-            {
-                yield return result;
-            }
-        }
-    }
-
-    private void AssertMoveCountDown(IEnumerable<IPlanner.PlanResult> plans, int startCount)
-    {
-        int count = startCount;
-        int indexCount = 0;
-        foreach(var plan in plans)
-        {
-            Assert.That(plan.MoveCount, Is.EqualTo(count), $"The MoveCount left for step ${indexCount} wasn't {count} but was {plan.MoveCount}.");
-            count--;
-            indexCount++;
-        }
-    }
-
-    private void AssertPositions(IEnumerable<IPlanner.PlanResult> plans, params Position[] positions)
-    {
-        int count = 0;
-        foreach (var plan in plans)
-        {
-            Assert.That(plan.NextPosition, Is.EqualTo(positions[count]), $"The Position for step ${count} wasn't {positions[count]} but was {plan.NextPosition}.");
-            count++;
-        }
-    }
 }

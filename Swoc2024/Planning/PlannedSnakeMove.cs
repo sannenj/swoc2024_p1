@@ -1,17 +1,10 @@
-﻿namespace Swoc2024;
+﻿namespace Swoc2024.Planning;
 
-public class PlannedSnakeMove : IEquatable<PlannedSnakeMove?>
+public class PlannedSnakeMove(Snake snake, Position destination, PlanResult plan) : IEquatable<PlannedSnakeMove?>
 {
-    public Snake Snake { get; set; }
-    public Position NextPosition { get; set; }
-    public Position Destination { get; set; }
-
-    public PlannedSnakeMove(Snake snake, Position nextPosition, Position destination)
-    {
-        Snake = snake;
-        NextPosition = nextPosition;
-        Destination = destination;
-    }
+    public Snake Snake { get; set; } = snake;
+    public Position Destination { get; set; } = destination;
+    public PlanResult Planned { get; set; } = plan;
 
     public override bool Equals(object? obj)
     {
@@ -25,7 +18,7 @@ public class PlannedSnakeMove : IEquatable<PlannedSnakeMove?>
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(Snake, NextPosition);
+        return HashCode.Combine(Snake, Planned);
     }
 
     public static bool operator ==(PlannedSnakeMove? left, PlannedSnakeMove? right)
@@ -46,6 +39,6 @@ public class PlannedSnakeMove : IEquatable<PlannedSnakeMove?>
             return false;
         }
 
-        return left.Snake == right.Snake && left.NextPosition == right.NextPosition;
+        return left.Snake == right.Snake && left.Planned == right.Planned;
     }
 }

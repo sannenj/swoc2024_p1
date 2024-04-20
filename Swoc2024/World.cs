@@ -63,10 +63,6 @@ public class World
             {
                 if (snake.Value.Positions.RemoveAll(i => i == cell.Position) > 0)
                 {
-                    if (snake.Value.Name == "testing_g")
-                    {
-                        Console.WriteLine($"Removed: {cell.Position}");
-                    }
                     if (snake.Value.Positions.Count == 0)
                     {
                         toRemoveKey = snake.Key;
@@ -89,9 +85,9 @@ public class World
             {
                 snakes[cell.Player].Positions.Add(cell.Position);
             }
-            if (cell.Player == "testing_g")
+            if (food.Contains(cell.Position))
             {
-                Console.WriteLine($"Added: {cell.Position}");
+                food.Remove(cell.Position);
             }
         }
         else if (cell.HasFood)

@@ -1,12 +1,17 @@
 ﻿
+using System.Diagnostics;
+
 namespace Swoc2024;
 
+[DebuggerStepThrough]
 public class Snake(string name, params Position[] positions) : IEquatable<Snake?>
 {
     public string Name { get; set; } = name;
     public List<Position> Positions { get; set; } = [.. positions];
 
-    public Position? Head => Positions?.FirstOrDefault();
+    public Position? Head => Positions?.LastOrDefault();
+
+    public long Score => (long)Math.Pow(Positions.Count, 4);
 
     public override string ToString()
     {

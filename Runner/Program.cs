@@ -3,6 +3,7 @@ using Grpc.Core;
 using Grpc.Net.Client;
 using PlayerInterface;
 using Swoc2024;
+using Swoc2024.Planning;
 using System.Text.Json;
 using Client = PlayerInterface.PlayerHost.PlayerHostClient;
 
@@ -30,7 +31,7 @@ await SetupWorldAsync(client, world);
 while(true)
 {
     await Task.Delay(TimeSpan.FromSeconds(2));
-    var snakes = world.GetSnakes().Where(i => i.Name == "Tommie").ToList();
+    var snakes = world.GetSnakes().ToList(); //.Where(i => i.Name == "Tommie").ToList();
     JsonSerializerOptions jsonOpts = new()
     {
         WriteIndented = true,
@@ -41,7 +42,7 @@ while(true)
     //{
     //    WriteIndented = true,
     //}));
-    Console.WriteLine(JsonSerializer.Serialize(world.GetFood().Count(), jsonOpts));
+    Console.WriteLine($"World food count: {world.GetFood().Count()}");
 }
 
 Client GetClient()
@@ -131,11 +132,11 @@ async Task UpdateWithPlanner(Client client, string id, World world, Planner plan
 {
     foreach(var plan in planner.PlanSnakes(world))
     {
+        Console.WriteLine($"Moving snake: {plan.Snake.Name}:{plan.Snake.Positions.Count}:{plan.Snake.Score}, from {plan.Snake.Head} to {plan.Planned.NextPosition} towards {plan.Destination}:{plan.Planned.MoveCount}.");
         Move newMove = new();
-        newMove.NextLocation.AddRange(plan.NextPosition.Positions);
+        newMove.NextLocation.AddRange(plan.Planned.NextPosition.Positions);
         newMove.SnakeName = plan.Snake.Name;
         newMove.PlayerIdentifier = id;
-        Console.WriteLine($"Moving snake: {plan.Snake.Name}:{plan.Snake.Positions.Count}, from {string.Join(':', plan.Snake.Positions.Select(i => i.ToString()))} to {plan.NextPosition} towards {plan.Destination}.");
         await client.MakeMoveAsync(newMove);
     }
 }

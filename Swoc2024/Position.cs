@@ -1,7 +1,8 @@
-﻿using static Swoc2024.Planner;
+﻿using System.Diagnostics;
 
 namespace Swoc2024;
 
+[DebuggerStepThrough]
 public class Position(int[] positions) : IEquatable<Position?>
 {
     public int[] Positions { get; set; } = positions;

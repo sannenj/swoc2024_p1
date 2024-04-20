@@ -1,94 +1,99 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Swoc2024.Planning;
 
-namespace Swoc2024
+namespace Swoc2024;
+
+public class AStarPlanner : IPlanner
 {
-    public class AStarPlanner : IPlanner
+    public PlanResult? PlanNextMove(Position[] blocked, Position current, Position target)
     {
-        public IPlanner.PlanResult? PlanNextMove(Position[] blocked, Position current, Position target)
-        {
-            (Position? pos, int distance) = GetNextToTarget(current, target, blocked, current.Dimensions);
-            return pos is null ? null : new IPlanner.PlanResult(distance, pos);
-        }
+        (Position? pos, int distance) = GetNextToTarget(current, target, blocked, current.Dimensions);
+        return pos is null ? null : new PlanResult(distance, pos);
+    }
 
-        private (Position?, int) GetNextToTarget(Position current, Position target, Position[] blocked, int k)
-        {
-            // A* Pathfinding Algorithm
-            var openSet = new List<Position> { current };
-            var cameFrom = new Dictionary<Position, Position>();
-            var gScore = new Dictionary<Position, int> { [current] = 0 };
-            var fScore = new Dictionary<Position, int> { [current] = current.DistanceTo(target) };
+    private (Position?, int) GetNextToTarget(Position current, Position target, Position[] blocked, int k)
+    {
+        // A* Pathfinding Algorithm
+        var openSet = new List<Position>([current]);
+        var cameFrom = new Dictionary<Position, Position>();
+        var gScore = new Dictionary<Position, int> { { current, 0 } };
+        var fScore = new Dictionary<Position, int> { { current, current.DistanceTo(target) } };
 
-            while (openSet.Any())
+        while (openSet.Any())
+        {
+            var currentPos = openSet.OrderBy(pos => fScore[pos]).First();
+
+            if (currentPos == target)
             {
-                var currentPos = openSet.OrderBy(pos => fScore[pos]).First();
+                return ReconstructPath(cameFrom, currentPos);
+            }
 
-                if (currentPos == target)
+            openSet.Remove(currentPos);
+
+            foreach (var neighbor in GetNeighbors(currentPos, blocked, k))
+            {
+                var tentativeGScore = gScore[currentPos] + 1;
+
+                if (!gScore.ContainsKey(neighbor) || tentativeGScore < gScore[neighbor])
                 {
-                    return ReconstructPath(cameFrom, currentPos);
-                }
+                    cameFrom[neighbor] = currentPos;
+                    gScore[neighbor] = tentativeGScore;
+                    fScore[neighbor] = gScore[neighbor] + neighbor.DistanceTo(target);
 
-                openSet.Remove(currentPos);
-
-                foreach (var neighbor in GetNeighbors(currentPos, blocked, k))
-                {
-                    var tentativeGScore = gScore[currentPos] + 1;
-
-                    if (!gScore.ContainsKey(neighbor) || tentativeGScore < gScore[neighbor])
+                    if (!openSet.Contains(neighbor))
                     {
-                        cameFrom[neighbor] = currentPos;
-                        gScore[neighbor] = tentativeGScore;
-                        fScore[neighbor] = gScore[neighbor] + neighbor.DistanceTo(target);
-
-                        if (!openSet.Contains(neighbor))
-                        {
-                            openSet.Add(neighbor);
-                        }
+                        openSet.Add(neighbor);
                     }
                 }
             }
+        }
 
-            // No path found
+        // No path found
+        return default;
+    }
+
+    private static List<Position> GetNeighbors(Position position, Position[] blocked, int k)
+    {
+        var neighbors = new List<Position>();
+
+        for (int i = 0; i < k; i++)
+        {
+            for (int j = -1; j <= 1; j++)
+            {
+                var coordinates = position.Positions.ToArray();
+                coordinates[i] += j;
+
+                var neighbor = new Position(coordinates);
+                if (!blocked.Contains(neighbor))
+                {
+                    neighbors.Add(neighbor);
+                }
+            }
+        }
+
+        return neighbors;
+    }
+
+    private static (Position?, int) ReconstructPath(Dictionary<Position, Position> cameFrom, Position current)
+    {
+        if (cameFrom is null)
+        {
             return default;
         }
 
-        private static List<Position> GetNeighbors(Position position, Position[] blocked, int k)
+        var path = new List<Position>([current]);
+
+        int count = 0;
+        while (cameFrom.ContainsKey(current))
         {
-            var neighbors = new List<Position>();
-
-            for (int i = 0; i < k; i++)
-            {
-                for (int j = -1; j <= 1; j++)
-                {
-                    var coordinates = position.Positions.ToArray();
-                    coordinates[i] += j;
-
-                    var neighbor = new Position(coordinates);
-                    if (!blocked.Contains(neighbor))
-                    {
-                        neighbors.Add(neighbor);
-                    }
-                }
-            }
-
-            return neighbors;
+            current = cameFrom[current];
+            path.Insert(0, current);
+            count++;
+        }
+        if (path is null || path.Count == 0)
+        {
+            return default;
         }
 
-        private static (Position, int) ReconstructPath(Dictionary<Position, Position> cameFrom, Position current)
-        {
-            var path = new List<Position> { current };
-
-            int count = 0;
-            while (cameFrom.ContainsKey(current))
-            {
-                current = cameFrom[current];
-                path.Insert(0, current);
-                count++;
-            }
-            return (path[1], count);
-        }
+        return (path[1], count);
     }
 }
