@@ -41,7 +41,8 @@ public class Planner(IPlanner plan, Position homePosition)
         var otherBlocks = world.GetSnakes().Where(i => !mySnakes.Where(j => j.SnakeName == i.Name).Any()).SelectMany(i => i.Positions).ToList();
 
         List<string> justAdded = [];
-        foreach (Snake snake in snakes.Where(i => i is not null))
+        snakes.Where(i => i is not null).ToList().ForEach(i => Console.WriteLine($"{i.Name}, {GetTarget(i.Name).Target}"));
+        foreach (Snake snake in snakes.Where(i => i is not null && GetTarget(i.Name).Target != Target.Home))
         {
             if (snake.Positions.Count > 5)
             {
@@ -49,24 +50,29 @@ public class Planner(IPlanner plan, Position homePosition)
                 var foundSnake = mySnakes[i];
                 foundSnake.Target = Target.Home;
                 mySnakes[i] = foundSnake;
-                (PlanResult? result, Position destination) = PlanToFood(otherBlocks.ToArray(), snake.Positions.First(), snake.Positions.ToArray(), world);
+
+                // Don't plan remainder to home just yet. That is the third loop below. Plan new snake first for SplitAction
+                (PlanResult? result, Position destination) = PlanToFood([.. otherBlocks], snake.Positions.First(), [.. snake.Positions.Skip(1)], world);
                 if (result is null)
                     continue;
+
+                otherBlocks.Add(result.NextPosition);
                 string name = GetName(snake.Name);
                 mySnakes.Add(new SnakeTarget(name, Target.Food));
-                justAdded.Add(name);
-                yield return new SplitSnakeAction(snake, destination, name, result);
+                justAdded.Add(name); // Make sure we don't send two moves for one snake when created
+                yield return new SplitSnakeAction(snake, name, result);
             }
         }
-
+        Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(snakes.Select(i => GetTarget(i.Name))));
         foreach (var snake in snakes.Where(i => GetTarget(i.Name).Target == Target.Food && !justAdded.Contains(i.Name)))
         {
-            if (snake.Head is null)
+            if (snake is null || snake.Positions.Count == 0 || snake.Head is null)
                 continue;
 
             (PlanResult? result, Position destination) = PlanToFood([.. otherBlocks], snake.Head, [.. snake.Positions], world);
             if (result is not null)
             {
+                Console.WriteLine("Goto food");
                 yield return new MoveSnakeAction(snake, destination, result);
                 otherBlocks.Add(result.NextPosition);
             }
@@ -74,20 +80,21 @@ public class Planner(IPlanner plan, Position homePosition)
 
         foreach (var snake in snakes.Where(i => GetTarget(i.Name).Target == Target.Home && !justAdded.Contains(i.Name)))
         {
-            if (snake.Head is null)
+            if (snake is null || snake.Positions.Count == 0 || snake.Head is null)
                 continue;
 
-            PlanResult? result = planner.PlanNextMove([.. otherBlocks], snake.Head, home);
-            if (result is null)
-                continue;
-
-            if (snake.Positions.Contains(result.NextPosition))
-                continue;
-
-            
-            yield return new MoveSnakeAction(snake, home, result);
+            PlanResult? result = planner.PlanNextMove(otherBlocks.ToArray(), snake.Head, home);
+            if (result is not null)
+            {
+                Console.WriteLine("Goto home");
+                yield return new MoveSnakeAction(snake, home, result);
+                otherBlocks.Add(result.NextPosition);
+            }
+            else
+            {
+                Console.WriteLine($"Failed to plan snake {snake.Name} a path home. It is stuck.");
+            }
         }
-
     }
 
     private SnakeTarget GetTarget(string name) => mySnakes.Where(i => i.SnakeName == name).First();

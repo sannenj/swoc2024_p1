@@ -20,6 +20,22 @@ public class Position(int[] positions) : IEquatable<Position?>
         return distance;
     }
 
+    public bool InDimension(int[] dimension)
+    {
+        if (dimension.Length != Positions.Length)
+        {
+            return false;
+        }
+        for(int i = 0; i < dimension.Length; i++)
+        {
+            if (Positions[i] >= dimension[i])
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public static bool operator ==(Position pos1, Position pos2)
     {
         return Equals(pos1, pos2);

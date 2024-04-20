@@ -1,9 +1,9 @@
-﻿using Swoc2024.Planning;
+﻿namespace Swoc2024.Planning;
 
-namespace Swoc2024;
-
-public class AStarPlanner : IPlanner
+public class AStarPlanner(int[] dimensionSizes) : IPlanner
 {
+    public int[] dimensions = dimensionSizes;
+
     public PlanResult? PlanNextMove(Position[] blocked, Position current, Position target)
     {
         (Position? pos, int distance) = GetNextToTarget(current, target, blocked, current.Dimensions);
@@ -51,7 +51,7 @@ public class AStarPlanner : IPlanner
         return default;
     }
 
-    private static List<Position> GetNeighbors(Position position, Position[] blocked, int k)
+    private List<Position> GetNeighbors(Position position, Position[] blocked, int k)
     {
         var neighbors = new List<Position>();
 
@@ -63,7 +63,7 @@ public class AStarPlanner : IPlanner
                 coordinates[i] += j;
 
                 var neighbor = new Position(coordinates);
-                if (!blocked.Contains(neighbor))
+                if (!blocked.Contains(neighbor) && neighbor.InDimension(dimensions))
                 {
                     neighbors.Add(neighbor);
                 }

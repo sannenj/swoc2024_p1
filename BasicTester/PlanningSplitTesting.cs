@@ -9,7 +9,7 @@ public class PlanningSplitTesting
     [Test]
     public void TestBasicSplit()
     {
-        var plan = new Planner(new AStarPlanner(), new([0, 0]));
+        var plan = new Planner(new AStarPlanner([20, 20]), new([0, 0]));
         World world = new();
         world.StartWorld([
             new Cell(new([8, 8]), "", true),

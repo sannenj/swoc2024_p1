@@ -7,6 +7,8 @@ using Swoc2024.Planning;
 using System.Text.Json;
 using Client = PlayerInterface.PlayerHost.PlayerHostClient;
 
+start:
+
 Console.WriteLine("Connecting...");
 var client = GetClient();
 Console.WriteLine("Connected");
@@ -15,7 +17,7 @@ Console.WriteLine("Registering...");
 (GameSettings settings, string name) = await RegisterAsync(client);
 Console.WriteLine("Registered");
 
-Planner planner = new(new AStarPlanner(), new(settings.StartAddress.ToArray()));
+Planner planner = new(new AStarPlanner(settings.Dimensions.ToArray()), new(settings.StartAddress.ToArray()));
 planner.SetMySnake(name, Planner.Target.Food);
 
 World world = new();
@@ -31,6 +33,11 @@ await SetupWorldAsync(client, world);
 while(true)
 {
     await Task.Delay(TimeSpan.FromSeconds(2));
+    Console.WriteLine($"My snake count is {planner.GetMySnakes(world).Length}.");
+    if (planner.GetMySnakes(world).Length == 0)
+    {
+        goto start; // Dirty, I know, but it works :)
+    }
     var snakes = world.GetSnakes().ToList(); //.Where(i => i.Name == "Tommie").ToList();
     JsonSerializerOptions jsonOpts = new()
     {

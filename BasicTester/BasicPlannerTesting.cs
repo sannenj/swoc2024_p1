@@ -9,7 +9,7 @@ public class BasicPlannerTesting
     [Test]
     public void TargetFirstFood()
     {
-        Planner planner = new(new AStarPlanner(), new([0]));
+        Planner planner = new(new AStarPlanner([20, 20]), new([0, 0]));
         planner.SetMySnake("me", Planner.Target.Food);
         World world = new();
         world.StartWorld([
@@ -24,7 +24,7 @@ public class BasicPlannerTesting
     [Test]
     public void ContinueAfterFirstFood()
     {
-        Planner planner = new(new AStarPlanner(), new([0]));
+        Planner planner = new(new AStarPlanner([20, 20]), new([0, 0]));
         World world = new();
         planner.SetMySnake("me", Planner.Target.Food);
         world.StartWorld([

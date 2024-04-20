@@ -60,7 +60,7 @@ public static class PlanningHelpers
         foreach(var move in nextMoves)
         {
             var next = moves.ToList().Find(i => i.Name == move.Snake.Name)?.NextPosition;
-            Assert.That(next, Is.EqualTo(move.Plan.NextPosition));
+            Assert.That(move.Plan.NextPosition, Is.EqualTo(next));
         }
     }
 
