@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Xml.Linq;
 
 namespace Swoc2024;
 
@@ -62,6 +63,10 @@ public class World
             {
                 if (snake.Value.Positions.RemoveAll(i => i == cell.Position) > 0)
                 {
+                    if (snake.Value.Name == "testing_g")
+                    {
+                        Console.WriteLine($"Removed: {cell.Position}");
+                    }
                     if (snake.Value.Positions.Count == 0)
                     {
                         toRemoveKey = snake.Key;
@@ -83,6 +88,10 @@ public class World
             if (snakes[cell.Player].Positions.Contains(cell.Position) == false)
             {
                 snakes[cell.Player].Positions.Add(cell.Position);
+            }
+            if (cell.Player == "testing_g")
+            {
+                Console.WriteLine($"Added: {cell.Position}");
             }
         }
         else if (cell.HasFood)

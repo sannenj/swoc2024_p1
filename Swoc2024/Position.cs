@@ -1,9 +1,23 @@
-﻿
+﻿using static Swoc2024.Planner;
+
 namespace Swoc2024;
 
 public class Position(int[] positions) : IEquatable<Position?>
 {
     public int[] Positions { get; set; } = positions;
+
+    public int Dimensions => Positions.Length;
+
+    public int DistanceTo(Position target)
+    {
+        // Calculate the Manhattan distance as the heuristic
+        int distance = 0;
+        for (int i = 0; i < Positions.Length; i++)
+        {
+            distance += Math.Abs(Positions[i] - target.Positions[i]);
+        }
+        return distance;
+    }
 
     public static bool operator ==(Position pos1, Position pos2)
     {

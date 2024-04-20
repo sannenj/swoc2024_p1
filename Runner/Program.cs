@@ -1,4 +1,5 @@
-﻿using Grpc.Core;
+﻿using Google.Protobuf.Collections;
+using Grpc.Core;
 using Grpc.Net.Client;
 using PlayerInterface;
 using Swoc2024;
@@ -10,15 +11,19 @@ var client = GetClient();
 Console.WriteLine("Connected");
 
 Console.WriteLine("Registering...");
-var settings = await RegisterAsync(client);
+(GameSettings settings, string name) = await RegisterAsync(client);
 Console.WriteLine("Registered");
+
+Planner planner = new(new AStarPlanner());
+planner.SetMySnake(name, Planner.Target.Food);
 
 World world = new();
 
-// _gameState = new GameState(settings.Dimensions.ToArray(), settings.StartAddress.ToArray(), playerName, settings.PlayerIdentifier);
+world.SnakeDied += (s, e) => Console.WriteLine($"Snake: {e.Name} died.");
+
 _ = SubscribeServerEvents(client, world);
 
-_ = SubscribeDelta(client, settings.PlayerIdentifier, world);
+_ = SubscribeDelta(client, settings.PlayerIdentifier, world, async () => await UpdateWithPlanner(client, settings.PlayerIdentifier, world, planner));
 
 await SetupWorldAsync(client, world);
 
@@ -26,7 +31,7 @@ while(true)
 {
     await Task.Delay(TimeSpan.FromSeconds(2));
     var snakes = world.GetSnakes().Where(i => i.Name == "Tommie").ToList();
-    var jsonOpts = new JsonSerializerOptions()
+    JsonSerializerOptions jsonOpts = new()
     {
         WriteIndented = true,
     };
@@ -45,7 +50,7 @@ Client GetClient()
     return new Client(channel);
 }
 
-async Task<GameSettings> RegisterAsync(Client client)
+async Task<(GameSettings settings, string name)> RegisterAsync(Client client)
 {
     byte[] buf = new byte[10];
     Random.Shared.NextBytes(buf);
@@ -59,10 +64,10 @@ async Task<GameSettings> RegisterAsync(Client client)
     Console.WriteLine($"Registering as: {playerName}.");
     var settings = await client.RegisterAsync(register);
     Console.WriteLine($"Registered, got ID: {settings.PlayerIdentifier}.");
-    return settings;
+    return (settings, playerName);
 }
 
-Task SubscribeDelta(Client client, string playerid, World world, CancellationToken cancellation = default)
+Task SubscribeDelta(Client client, string playerid, World world, Action onUpdate, CancellationToken cancellation = default)
 {
     var req = new SubsribeRequest
     {
@@ -80,6 +85,7 @@ Task SubscribeDelta(Client client, string playerid, World world, CancellationTok
             {
                 world.QueueUpdate(new Cell(new Position([.. cell.Address]), cell.Player, cell.FoodValue > 0));
             }
+            onUpdate?.Invoke();
         }
     });
 }
@@ -119,4 +125,17 @@ async Task SetupWorldAsync(Client client, World world, CancellationToken cancell
             )
         )
     );
+}
+
+async Task UpdateWithPlanner(Client client, string id, World world, Planner planner)
+{
+    foreach(var plan in planner.PlanSnakes(world))
+    {
+        Move newMove = new();
+        newMove.NextLocation.AddRange(plan.NextPosition.Positions);
+        newMove.SnakeName = plan.Snake.Name;
+        newMove.PlayerIdentifier = id;
+        Console.WriteLine($"Moving snake: {plan.Snake.Name}:{plan.Snake.Positions.Count}, from {string.Join(':', plan.Snake.Positions.Select(i => i.ToString()))} to {plan.NextPosition} towards {plan.Destination}.");
+        await client.MakeMoveAsync(newMove);
+    }
 }

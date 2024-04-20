@@ -6,6 +6,8 @@ public class Snake(string name, params Position[] positions) : IEquatable<Snake?
     public string Name { get; set; } = name;
     public List<Position> Positions { get; set; } = [.. positions];
 
+    public Position? Head => Positions?.FirstOrDefault();
+
     public override string ToString()
     {
         return $"{{{Name}, {Positions.Count}}}";

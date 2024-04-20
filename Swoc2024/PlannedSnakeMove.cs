@@ -4,11 +4,13 @@ public class PlannedSnakeMove : IEquatable<PlannedSnakeMove?>
 {
     public Snake Snake { get; set; }
     public Position NextPosition { get; set; }
+    public Position Destination { get; set; }
 
-    public PlannedSnakeMove(Snake snake, Position nextPosition)
+    public PlannedSnakeMove(Snake snake, Position nextPosition, Position destination)
     {
         Snake = snake;
         NextPosition = nextPosition;
+        Destination = destination;
     }
 
     public override bool Equals(object? obj)
