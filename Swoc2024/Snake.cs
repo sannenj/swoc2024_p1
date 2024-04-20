@@ -9,7 +9,7 @@ public class Snake(string name, params Position[] positions) : IEquatable<Snake?
     public string Name { get; set; } = name;
     public List<Position> Positions { get; set; } = [.. positions];
 
-    public Position? Head => Positions?.LastOrDefault();
+    public Position Head => Positions.Last();
 
     public long Score => (long)Math.Pow(Positions.Count, 4);
 

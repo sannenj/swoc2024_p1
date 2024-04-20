@@ -1,10 +1,14 @@
 ﻿using Swoc2024;
 using Swoc2024.Planning;
+using System.Numerics;
 
 namespace BasicTester;
 
 public static class PlanningHelpers
 {
+    public record SplitAction(string OldName, Position NextPosition);
+    public record MoveAction(string Name, Position NextPosition);
+
     public static IEnumerable<PlanResult> PlanResult(Position[] blocked, IPlanner planner, Position current, Position target)
     {
         const int maxCount = 20;
@@ -47,16 +51,33 @@ public static class PlanningHelpers
         }
     }
 
-    public static void AssertPlanNextMoves(this Planner planner, World world, params Position[] moves)
+    public static void AssertPlanNextMoves(this IEnumerable<PlanSnakeAction> planned, World world, params MoveAction[] moves)
     {
-        var nextMoves = planner.PlanSnakes(world).ToList();
+        var nextMoves = planned.Where(i => i is MoveSnakeAction).Select(i => (i as MoveSnakeAction)!).ToList();
 
         Assert.That(nextMoves, Has.Count.EqualTo(moves.Length));
 
-        for(int i = 0; i < moves.Length; i++)
+        foreach(var move in nextMoves)
         {
-            Assert.That(nextMoves[i].Planned.NextPosition, Is.EqualTo(moves[i]));
+            var next = moves.ToList().Find(i => i.Name == move.Snake.Name)?.NextPosition;
+            Assert.That(next, Is.EqualTo(move.Plan.NextPosition));
         }
+    }
 
+    public static void AssertPlanNextSplits(this IEnumerable<PlanSnakeAction> planned, World world, params SplitAction[] moves)
+    {
+        var nextMoves = planned.Where(i => i is SplitSnakeAction).Select(i => (i as SplitSnakeAction)!).ToList();
+
+        Assert.That(nextMoves, Has.Count.EqualTo(moves.Length));
+
+        for (int i = 0; i < moves.Length; i++)
+        {
+            Assert.Multiple(() => {
+                Assert.That(nextMoves[i], Is.TypeOf<SplitSnakeAction>());
+
+                Assert.That(nextMoves[i].Snake.Name, Is.EqualTo(moves[i].OldName));
+                Assert.That(nextMoves[i].Plan.NextPosition, Is.EqualTo(moves[i].NextPosition));
+            });
+        }
     }
 }

@@ -15,7 +15,7 @@ Console.WriteLine("Registering...");
 (GameSettings settings, string name) = await RegisterAsync(client);
 Console.WriteLine("Registered");
 
-Planner planner = new(new AStarPlanner());
+Planner planner = new(new AStarPlanner(), new(settings.StartAddress.ToArray()));
 planner.SetMySnake(name, Planner.Target.Food);
 
 World world = new();
@@ -132,11 +132,27 @@ async Task UpdateWithPlanner(Client client, string id, World world, Planner plan
 {
     foreach(var plan in planner.PlanSnakes(world))
     {
-        Console.WriteLine($"Moving snake: {plan.Snake.Name}:{plan.Snake.Positions.Count}:{plan.Snake.Score}, from {plan.Snake.Head} to {plan.Planned.NextPosition} towards {plan.Destination}:{plan.Planned.MoveCount}.");
-        Move newMove = new();
-        newMove.NextLocation.AddRange(plan.Planned.NextPosition.Positions);
-        newMove.SnakeName = plan.Snake.Name;
-        newMove.PlayerIdentifier = id;
-        await client.MakeMoveAsync(newMove);
+        if (plan is MoveSnakeAction move)
+        {
+            Console.WriteLine($"Moving snake: {move.Snake.Name}:{move.Snake.Positions.Count}:{move.Snake.Score}, from {move.Snake.Head} to {move.Plan.NextPosition} towards {move.Destination}:{move.Plan.MoveCount}.");
+            Move newMove = new();
+            newMove.NextLocation.AddRange(move.Plan.NextPosition.Positions);
+            newMove.SnakeName = move.Snake.Name;
+            newMove.PlayerIdentifier = id;
+            await client.MakeMoveAsync(newMove);
+        }
+        else if (plan is SplitSnakeAction split)
+        {
+            Console.WriteLine($"Requesting to split snake {plan.Snake.Name} into {split.NewName}.");
+            var request = new SplitRequest()
+            {
+                NewSnakeName = split.NewName,
+                OldSnakeName = split.Snake.Name,
+                PlayerIdentifier = id,
+                SnakeSegment = 1
+            };
+            request.NextLocation.AddRange(split.Plan.NextPosition.Positions);
+            await client.SplitSnakeAsync(request);
+        }
     }
 }

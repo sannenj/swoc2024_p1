@@ -37,6 +37,39 @@ namespace BasicTester
             });
         }
 
+        [Test]
+        public void JustOneSnakeMoving()
+        {
+            World world = new();
+
+            var positions = new Position[]
+            {
+                new([0, 0, 1]),
+                new([0, 0, 2]),
+                new([0, 0, 3]),
+                new([0, 0, 4])
+            };
+
+            world.StartWorld(
+            [
+                new(positions[0], "Hello", false),
+                new(positions[1], "Hello", false),
+                new(positions[2], "Hello", false),
+            ]);
+
+            world.QueueUpdate(new Cell(positions[3], "Hello", false));
+            world.QueueUpdate(new Cell(positions[0], "", false));
+
+            var snakes = world.GetSnakes();
+            Assert.Multiple(() =>
+            {
+                Assert.That(snakes.Count(), Is.EqualTo(1));
+                var pos = positions.Skip(1).Take(3).ToArray();
+                Snake expectedSnake = new("Hello", pos);
+                Assert.That(snakes.First(), Is.EqualTo(expectedSnake));
+            });
+        }
+
 
         [Test]
         public void TwoBasicSnakes()
