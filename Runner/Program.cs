@@ -54,7 +54,7 @@ while(true)
 
 Client GetClient()
 {
-    var channel = GrpcChannel.ForAddress("http://192.168.178.62:5168");
+    var channel = GrpcChannel.ForAddress("http://localhost:5168");
     return new Client(channel);
 }
 
